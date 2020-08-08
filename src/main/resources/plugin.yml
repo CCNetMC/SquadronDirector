@@ -1,22 +1,77 @@
-name: Cargo
-main: io.github.cccm5.CargoMain
+name: SquadronDirector
+main: io.github.cccm5.SquadronDirectorMain
 version: ${project.version}
 api-version: 1.14
-depend: [Movecraft, Vault, Citizens, dtlTraders]
+depend: [Movecraft]
 commands:
-    load:
-        description: loads cargo
-        permission: Cargo.load
-    unload:
-        description: unloads cargo
-        permission: Cargo.unload
-    cargo:
-        description: get information about the plugin
-        permission: Cargo.cargo
+    sdrelease:
+        description: Release the squadron being commanded
+        permission: Squadron.command.release
+    sdscuttle:
+        description: Scuttle the squadron being commanded (all pilots eject)
+        permission: Squadron.command.scuttle
+    sdlaunch:
+        description: Enter Squadron Director launching mode
+        permission: Squadron.command.launch
+    sdcruise:
+        description: Set cruising to on or off
+        permission: Squadron.command.cruise
+    sdrotate:
+        description: Rotate the crafts left or right
+        permission: Squadron.command.rotate
+    sdlever:
+        description: Activate all levers on the crafts
+        permission: Squadron.command.lever
+    sdbutton:
+        description: Activate all buttons on the crafts
+        permission: Squadron.command.button
+    sdascend:
+        description: Begins or stops ascending
+        permission: Squadron.command.ascend
+    sddescend:
+        description: Begins or stops descending
+        permission: Squadron.command.descend
+    sdformup:
+        description: Begins or stops forming up
+        permission: Squadron.command.formup
 permissions:
-    Cargo.load:
-        description: Allows users to load cargo
-    Cargo.unload:
-        description: Allows users unload cargo
-    Cargo.cargo:
-        description: Allows users to use /cargo
+    Squadron.sign.release:
+        description: Allows users to release their squadron with a sign
+    Squadron.sign.launch:
+        description: Allows users to enter launching mode with a sign
+    Squadron.sign.cruise:
+        description: Allows users to set cruising with a sign
+    Squadron.sign.rotate:
+        description: Allows users to rotate with a sign
+    Squadron.sign.lever:
+        description: Allows users to activate levers with a sign
+    Squadron.sign.button:
+        description: Allows users to activate buttons with a sign
+    Squadron.sign.torp:
+        description: Allows users to launch torps with a sign
+    Squadron.sign.recon:
+        description: Allows users to see their squadron from a recon view
+    Squadron.sign.formup:
+        description: Allows users to form up with a sign
+    Squadron.sign.remote:
+        description: Allows users to use a remote sign on their squadron
+
+    Squadron.command.release:
+        description: Allows users to release their squadron with a command
+    Squadron.command.scuttle:
+        description: Allows users to scuttle their squadron with a command
+    Squadron.command.launch:
+        description: Allows users to enter launching mode with a command
+    Squadron.command.cruise:
+        description: Allows users to set cruising with a command
+    Squadron.command.rotate:
+        description: Allows users to rotate with a command
+    Squadron.command.lever:
+        description: Allows users to activate levers with a command
+    Squadron.command.button:
+        description: Allows users to activate buttons with a command
+    Squadron.command.formup:
+        description: Allows users to form up with a command
+
+    Squadron.craftname:
+        description: Allows users to direct a craft named craftnamed
