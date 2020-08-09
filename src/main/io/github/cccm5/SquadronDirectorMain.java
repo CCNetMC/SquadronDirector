@@ -1,6 +1,7 @@
 package io.github.cccm5;
 
 import io.github.cccm5.commands.SDCommand;
+import io.github.cccm5.listener.MovecraftListener;
 import io.github.cccm5.listener.PlayerListener;
 import io.github.cccm5.listener.SignChangeListener;
 import io.github.cccm5.managers.DirectorManager;
@@ -65,6 +66,7 @@ private static boolean debug;
         // Register events and commands
         this.getServer().getPluginManager().registerEvents(new PlayerListener(), this);
         this.getServer().getPluginManager().registerEvents(new SignChangeListener(), this);
+        getServer().getPluginManager().registerEvents(new MovecraftListener(), this);
         getCommand("squadronDirector").setExecutor(new SDCommand());
     }
 

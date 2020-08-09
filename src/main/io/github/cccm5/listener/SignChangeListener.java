@@ -73,6 +73,7 @@ public class SignChangeListener implements Listener {
                         formName = "Vic";
                     } else {
                         e.getPlayer().sendMessage(ERROR_TAG + "Invalid formation type: " + e.getLine(2));
+                        e.setCancelled(true);
                     }
                 }
                 e.setLine(2, formName);
@@ -194,19 +195,14 @@ public class SignChangeListener implements Listener {
                     return;
                 }
                 Integer spacing=10;
+                Formation form = Formation.valueOf(ChatColor.stripColor(sign.getLine(2)).toUpperCase());
                 spacing=Integer.valueOf(sign.getLine(3));
 
                 if(spacing> SquadronDirectorMain.getInstance().getConfig().getInt("Max spacing")) {
                     player.sendMessage(ERROR_TAG + "Spacing is too high!");
                     return;
                 }
-                if(manager.getPlayersFormingUp().get(player)==spacing) {
-                    manager.getPlayersFormingUp().remove(player);
-                    player.sendMessage(SUCCESS_TAG+"No longer forming up");
-                } else {
-                    manager.getPlayersFormingUp().put(player, spacing);
-                    player.sendMessage(SUCCESS_TAG+"Forming up");
-                }
+                manager.toggleFormUp(player, form, spacing);
                 e.setCancelled(true);
                 return;
             }

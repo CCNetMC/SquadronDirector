@@ -157,6 +157,14 @@ public class PlayerListener implements Listener {
                         return;
                     }
                 }
+                if (dx < -0.07) {
+                    e.setCancelled(true);
+                    manager.cruiseEnable(player);
+                }
+                if (dx > 0.07) {
+                    e.setCancelled(true);
+                    manager.cruiseDisable(player);
+                }
             }
             // ship faces east
             if (leadCraft.getCruiseDirection() == 0x4) {
@@ -185,6 +193,14 @@ public class PlayerListener implements Listener {
                         player.sendMessage(SUCCESS_TAG+"Strafe Right disabled");
                         return;
                     }
+                }
+                if (dx > 0.07) {
+                    e.setCancelled(true);
+                    manager.cruiseEnable(player);
+                }
+                if (dx < -0.07) {
+                    e.setCancelled(true);
+                    manager.cruiseDisable(player);
                 }
             }
             // ship faces north
@@ -215,6 +231,14 @@ public class PlayerListener implements Listener {
                         return;
                     }
                 }
+                if (dz > 0.07) {
+                    e.setCancelled(true);
+                    manager.cruiseEnable(player);
+                }
+                if (dz < -0.07) {
+                    e.setCancelled(true);
+                    manager.cruiseDisable(player);
+                }
             }
             // ship faces south
             if (leadCraft.getCruiseDirection() == 0x3) {
@@ -244,15 +268,21 @@ public class PlayerListener implements Listener {
                         return;
                     }
                 }
+                if (dz < -0.07) {
+                    e.setCancelled(true);
+                    manager.cruiseEnable(player);
+                }
+                if (dz > 0.07) {
+                    e.setCancelled(true);
+                    manager.cruiseDisable(player);
+                }
             }
         }
     }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        final Location tpLoc = manager.getPlayersInReconSignLocation().remove(event.getPlayer());
-        manager.getPlayersInReconParentCrafts().remove(event.getPlayer());
-        event.getPlayer().teleport(tpLoc);
+        manager.leaveReconMode(event.getPlayer());
     }
 
 

@@ -3,10 +3,12 @@ package io.github.cccm5.commands;
 import io.github.cccm5.Formation;
 import io.github.cccm5.SquadronDirectorMain;
 import io.github.cccm5.managers.DirectorManager;
+import net.countercraft.movecraft.Rotation;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.Action;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,6 +18,7 @@ import java.util.List;
 import static io.github.cccm5.SquadronDirectorMain.ERROR_TAG;
 
 public class SDCommand implements TabExecutor {
+    DirectorManager manager = SquadronDirectorMain.getInstance().getDirectorManager();
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!command.getName().equalsIgnoreCase("squadrondirector"))
@@ -105,6 +108,23 @@ public class SDCommand implements TabExecutor {
             }
             sqMain.toggleFormUp(player, formation, spacing);
         }
+        if (args[0].equalsIgnoreCase("rotate")) {
+            if(!player.hasPermission("Squadron.command.rotate")) {
+                player.sendMessage(ERROR_TAG + "You do not have permissions to execute that command!");
+                return true;
+            }
+            if (args.length == 1) {
+                player.sendMessage(ERROR_TAG + "No arguments! Valid arguments are Left and Right");
+                return true;
+            }
+            if(args[1].equalsIgnoreCase("left")) {
+                manager.rotateSquadron(player, Rotation.ANTICLOCKWISE);
+            } else if (args[1].equalsIgnoreCase("right")) {
+                manager.rotateSquadron(player, Rotation.CLOCKWISE);
+            } else {
+                player.sendMessage(ERROR_TAG + "Invalid argument: " + args[1]);
+            }
+        }
         return true;
     }
 
@@ -119,12 +139,16 @@ public class SDCommand implements TabExecutor {
                 "button",
                 "ascend",
                 "descend",
+                "rotate",
                 "formup");
         if (args.length == 0) {
             return tabcompletions;
         }
         else if (args[0].equalsIgnoreCase("formup")) {
-            tabcompletions = Arrays.asList("echelon, vic");
+            tabcompletions = Arrays.asList("echelon", "vic");
+        }
+        else if (args[0].equalsIgnoreCase("rotate")) {
+            tabcompletions = Arrays.asList("left", "right");
         }
         List<String> completions = new ArrayList<>();
         for (String cmd : tabcompletions) {

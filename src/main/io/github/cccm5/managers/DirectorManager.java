@@ -26,6 +26,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -97,7 +98,8 @@ public class DirectorManager extends BukkitRunnable {
 
         // and make the crafts form up that are supposed to
         for(Player p : playersFormingUp.keySet()) {
-            Formation form = playerFormations.getOrDefault(p, null);
+            Formation form = playerFormations.get(p);
+            Bukkit.broadcastMessage(String.valueOf(form));
             if (form == Formation.ECHELON)
                 formUpEchelon(p);
             else if (form == Formation.VIC) {
@@ -301,12 +303,44 @@ public class DirectorManager extends BukkitRunnable {
             player.sendMessage(ERROR_TAG+"You have no squadron craft to direct");
             return;
         }
+        if (allCraftsNotCruising(directedCrafts.get(player)))
+            return;
         for(Craft c : directedCrafts.get(player)) {
             if(c==null)
                 continue;
             boolean setCruise = !c.getCruising();
             determineCruiseDirection(c);
             c.setCruising(setCruise);
+        }
+    }
+
+    public void cruiseEnable(Player player) {
+        if(directedCrafts.get(player)==null || directedCrafts.get(player).isEmpty()) {
+            player.sendMessage(ERROR_TAG+"You have no squadron craft to direct");
+            return;
+        }
+        if (allCraftsCruising(directedCrafts.get(player)))
+            return;
+        player.sendMessage(SUCCESS_TAG + "Cruise enabled");
+        for(Craft c : directedCrafts.get(player)) {
+            if(c==null)
+                continue;
+            determineCruiseDirection(c);
+            c.setCruising(true);
+        }
+    }
+
+    public void cruiseDisable(Player player) {
+        if(directedCrafts.get(player)==null || directedCrafts.get(player).isEmpty()) {
+            player.sendMessage(ERROR_TAG+"You have no squadron craft to direct");
+            return;
+        }
+        player.sendMessage(SUCCESS_TAG + "Cruise disabled");
+        for(Craft c : directedCrafts.get(player)) {
+            if(c==null)
+                continue;
+            determineCruiseDirection(c);
+            c.setCruising(false);
         }
     }
     public void leverControl(Player player) {
@@ -367,6 +401,26 @@ public class DirectorManager extends BukkitRunnable {
         playersStrafingUpDown.put(player,1);
         player.sendMessage(SUCCESS_TAG+"Descent enabled");
         return;
+    }
+
+    public boolean allCraftsCruising(Collection<Craft> crafts) {
+        int cruising = 0;
+        for (Craft c : crafts) {
+            if (!c.getCruising())
+                continue;
+            cruising++;
+        }
+        return cruising == crafts.size();
+    }
+
+    public boolean allCraftsNotCruising(Collection<Craft> crafts) {
+        int notCruising = 0;
+        for (Craft c : crafts) {
+            if (c.getCruising())
+                continue;
+            notCruising++;
+        }
+        return notCruising == crafts.size();
     }
 
     public void leaveReconMode(Player player) {
@@ -614,13 +668,23 @@ public class DirectorManager extends BukkitRunnable {
 //                    determineCruiseDirection(c);
                 }
 
+
                 // move the crafts to their position in formation
                 int posInFormation = craftIndex - leadIndex;
                 int offset = posInFormation * spacing;
-                offset = leftOfLead ? -offset : offset;
                 int targX = leadX + offset;
-                int targY = leadY + (offset >> 1);
+                int targY = leadY;
                 int targZ = leadZ + offset;
+                if(c.getCruiseDirection()==0x3 || c.getCruiseDirection()==0x2) {//south/north
+                    targX = leadX + (leftOfLead ? -offset : offset);
+                    targY = leadY;
+                    targZ = leadZ + offset;
+                }
+                if(c.getCruiseDirection()==0x4 || c.getCruiseDirection()==0x5){// east/west
+                    targX = leadX + offset;
+                    targY = leadY;
+                    targZ = leadZ + (leftOfLead ? -offset : offset);
+                }
 
                 int dx = 0;
                 int dy = 0;
