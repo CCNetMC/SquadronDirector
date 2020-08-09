@@ -1,39 +1,15 @@
 name: SquadronDirector
 main: io.github.cccm5.SquadronDirectorMain
 version: ${project.version}
-api-version: 1.14
+api-version: 1.13
 depend: [Movecraft]
 commands:
-    sdrelease:
-        description: Release the squadron being commanded
-        permission: Squadron.command.release
-    sdscuttle:
-        description: Scuttle the squadron being commanded (all pilots eject)
-        permission: Squadron.command.scuttle
-    sdlaunch:
-        description: Enter Squadron Director launching mode
-        permission: Squadron.command.launch
-    sdcruise:
-        description: Set cruising to on or off
-        permission: Squadron.command.cruise
-    sdrotate:
-        description: Rotate the crafts left or right
-        permission: Squadron.command.rotate
-    sdlever:
-        description: Activate all levers on the crafts
-        permission: Squadron.command.lever
-    sdbutton:
-        description: Activate all buttons on the crafts
-        permission: Squadron.command.button
-    sdascend:
-        description: Begins or stops ascending
-        permission: Squadron.command.ascend
-    sddescend:
-        description: Begins or stops descending
-        permission: Squadron.command.descend
-    sdformup:
-        description: Begins or stops forming up
-        permission: Squadron.command.formup
+    squadrondirector:
+        description: Main command for squadron director
+        aliases:
+            - sd
+            - sdir
+            - sdirector
 permissions:
     Squadron.sign.release:
         description: Allows users to release their squadron with a sign
