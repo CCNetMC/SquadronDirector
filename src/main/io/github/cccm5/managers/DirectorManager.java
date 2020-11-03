@@ -7,11 +7,11 @@ import net.countercraft.movecraft.MovecraftLocation;
 import net.countercraft.movecraft.Rotation;
 import net.countercraft.movecraft.craft.Craft;
 import net.countercraft.movecraft.craft.CraftManager;
+import net.countercraft.movecraft.events.CraftReleaseEvent;
+import net.countercraft.movecraft.utils.BitmapHitBox;
+import net.countercraft.movecraft.utils.MutableHitBox;
 import net.countercraft.movecraft.utils.TeleportUtils;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
@@ -27,6 +27,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -41,6 +42,7 @@ public class DirectorManager extends BukkitRunnable {
     private ConcurrentHashMap<Player, Formation> playerFormations = new ConcurrentHashMap<>();
     private ConcurrentHashMap<Player, Location> playersInReconSignLocation = new ConcurrentHashMap<>();
     private ConcurrentHashMap<Player, Craft> playersInReconParentCrafts = new ConcurrentHashMap<>();
+    private List<Player> playersInAimingMode = new ArrayList<>();
     private ConcurrentHashMap<Player, String> playersWeaponControl = new ConcurrentHashMap<>();
     private ConcurrentHashMap<Player, Integer> playersWeaponNumClicks = new ConcurrentHashMap<>();
     private ConcurrentHashMap<Player, Integer> playersFormingUp = new ConcurrentHashMap<>();
@@ -99,7 +101,6 @@ public class DirectorManager extends BukkitRunnable {
         // and make the crafts form up that are supposed to
         for(Player p : playersFormingUp.keySet()) {
             Formation form = playerFormations.get(p);
-            Bukkit.broadcastMessage(String.valueOf(form));
             if (form == Formation.ECHELON)
                 formUpEchelon(p);
             else if (form == Formation.VIC) {
@@ -164,6 +165,26 @@ public class DirectorManager extends BukkitRunnable {
         directedCrafts.get(player).removeAll(craftsToRemove);
     }
 
+    public boolean pathObstructed(Craft c, int dx, int dy, int dz) {
+        for (MovecraftLocation loc : c.getHitBox()) {
+            final MovecraftLocation translated = loc.translate(dx, dy, dz);
+            final Block test = translated.toBukkit(c.getW()).getBlock();
+            if (c.getHitBox().contains(translated) || test.getType() == Material.AIR || c.getType().getPassthroughBlocks().contains(test.getType()))
+                continue;
+            return true;
+        }
+        return false;
+    }
+
+    private Craft getCraftAt(World world, MovecraftLocation loc) {
+        for (Craft c : CraftManager.getInstance().getCraftsInWorld(world)) {
+            if (!c.getHitBox().contains(loc))
+                continue;
+            return c;
+        }
+        return null;
+    }
+
     public void updatePendingMove(Craft c, int dx, int dy, int dz) {
         if (pendingMoveDX.get(c) != null) {
             dx += pendingMoveDX.get(c);
@@ -193,6 +214,8 @@ public class DirectorManager extends BukkitRunnable {
             if(pendingMoveDZ.get(c)!=null) {
                 dz+=pendingMoveDZ.get(c);
             }
+            if (pathObstructed(c, dx, dy, dz))
+                continue;
             c.translate(dx, dy, dz);
         }
         pendingMoveDX.clear();
@@ -222,11 +245,11 @@ public class DirectorManager extends BukkitRunnable {
         }
         if(!foundCruise) {
             craft.getNotificationPlayer().sendMessage(ERROR_TAG+"This craft has no Cruise sign and can not be directed");
-            CraftManager.getInstance().removeCraft(craft);
+            CraftManager.getInstance().removeCraft(craft, CraftReleaseEvent.Reason.FORCE);
         }
         if(!foundHelm) {
             craft.getNotificationPlayer().sendMessage(ERROR_TAG+"This craft has no Helm sign and can not be directed");
-            CraftManager.getInstance().removeCraft(craft);
+            CraftManager.getInstance().removeCraft(craft, CraftReleaseEvent.Reason.FORCE);
         }
     }
 
@@ -282,7 +305,7 @@ public class DirectorManager extends BukkitRunnable {
         }
         int numCraft=0;
         for(Craft c : directedCrafts.get(player)) {
-            CraftManager.getInstance().removeCraft(c);
+            CraftManager.getInstance().removeCraft(c, CraftReleaseEvent.Reason.PLAYER);
             numCraft++;
         }
         playersFormingUp.remove(player);
@@ -540,6 +563,7 @@ public class DirectorManager extends BukkitRunnable {
         int leadY=0;
         int leadZ=0;
         int craftIndex=-1;
+        Craft leadCraft = null;
         for(Craft c : directedCrafts.get(player)) {
             craftIndex++;
             if((c==null)||(c.getHitBox().isEmpty())) {
@@ -552,25 +576,53 @@ public class DirectorManager extends BukkitRunnable {
                 leadY=c.getHitBox().getMidPoint().getY();
                 leadZ=c.getHitBox().getMidPoint().getZ();
             }
+            if (leadCraft == null)
+                leadCraft = c;
         }
-        Location loc=new Location(player.getWorld(), leadX, leadY+5, leadZ);
+        Location loc = new Location(player.getWorld(), leadX, leadY + 50, leadZ);
+        if (playersInAimingMode.contains(player)) {
+            // ship faces west
+            switch (leadCraft.getCruiseDirection()) {
+                case 0x5:
+                    loc = new Location(player.getWorld(), leadX - (leadCraft.getHitBox().getXLength() + 2), leadY, leadZ);
+                    break;
+                // ship faces east
+                case 0x4:
+                    loc = new Location(player.getWorld(), leadX + (leadCraft.getHitBox().getXLength() + 2), leadY, leadZ);
+                    break;
+                // ship faces north
+                case 0x2:
+                    loc = new Location(player.getWorld(), leadX, leadY, leadZ - (leadCraft.getHitBox().getXLength() + 2));
+                    break;
+                // ship faces south
+                case 0x3:
+                    loc = new Location(player.getWorld(), leadX, leadY, leadZ + (leadCraft.getHitBox().getXLength() + 2));
+                    break;
+            }
+        }
         player.setAllowFlight(true);
         player.setFlying(true);
         TeleportUtils.teleport(player,loc,(float)0.0);
         // TODO: Draw a HUD for weapons control
     }
 
+
+
     public void rotateSquadron(Player player, Rotation rotation){
         if(directedCrafts.get(player)==null || directedCrafts.get(player).isEmpty()) {
             player.sendMessage(ERROR_TAG+"You have no squadron craft to direct");
             return;
         }
-
-        for(Craft c : directedCrafts.get(player)) {
-            c.rotate(rotation, c.getHitBox().getMidPoint());
+        final CopyOnWriteArrayList<Craft> directed = directedCrafts.get(player);
+        final MutableHitBox rotationBox = new BitmapHitBox();
+        for (Craft c : directed) {
+            rotationBox.addAll(c.getHitBox());
+        }
+        final MovecraftLocation origin = rotationBox.getMidPoint();
+        for(Craft c : directed) {
+            c.rotate(rotation, origin);
             determineCruiseDirection(c);
         }
-        return;
     }
 
     public void scuttleSquadrons(Player player){
@@ -678,10 +730,10 @@ public class DirectorManager extends BukkitRunnable {
                 if(c.getCruiseDirection()==0x3 || c.getCruiseDirection()==0x2) {//south/north
                     targX = leadX + (leftOfLead ? -offset : offset);
                     targY = leadY;
-                    targZ = leadZ + offset;
+                    targZ = leadZ + (c.getCruiseDirection()==0x3 ? -1 : 1) * offset;
                 }
                 if(c.getCruiseDirection()==0x4 || c.getCruiseDirection()==0x5){// east/west
-                    targX = leadX + offset;
+                    targX = leadX + (c.getCruiseDirection()==0x4 ? -1 : 1) * offset;
                     targY = leadY;
                     targZ = leadZ + (leftOfLead ? -offset : offset);
                 }
@@ -728,6 +780,24 @@ public class DirectorManager extends BukkitRunnable {
                     } else {
                         dz = -2;
                     }
+                }
+                if (dy == 0 && dx == 0 && pathObstructed(c, dx, dy, dz)) {
+                    dx = 2;
+                }
+                if (dy == 0 && dx > 0 && pathObstructed(c, dx, dy, dz)) {
+                    dx = -2;
+                }
+                if (dy == 0 && dz == 0 && pathObstructed(c, dx, dy, dz)) {
+                    dz = 2;
+                }
+                if (dy == 0 && dz > 0 && pathObstructed(c, dx, dy, dz)) {
+                    dz = -2;
+                }
+                if (dy == 0  && pathObstructed(c, dx, dy, dz)) {
+                    dy = -2;
+                }
+                if (dy < 0  && pathObstructed(c, dx, dy, dz)) {
+                    dx = 2;
                 }
                 updatePendingMove(c, dx,dy,dz);
 
@@ -952,5 +1022,9 @@ public class DirectorManager extends BukkitRunnable {
 
     public ConcurrentHashMap<Player, String> getPlayersWeaponControl() {
         return playersWeaponControl;
+    }
+
+    public List<Player> getPlayersInAimingMode() {
+        return playersInAimingMode;
     }
 }

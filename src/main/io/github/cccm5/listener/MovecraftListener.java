@@ -4,6 +4,7 @@ import io.github.cccm5.SquadronDirectorMain;
 import io.github.cccm5.managers.DirectorManager;
 import net.countercraft.movecraft.MovecraftLocation;
 import net.countercraft.movecraft.craft.Craft;
+import net.countercraft.movecraft.events.CraftReleaseEvent;
 import net.countercraft.movecraft.events.CraftSinkEvent;
 import net.countercraft.movecraft.events.SignTranslateEvent;
 import net.countercraft.movecraft.utils.MathUtils;
@@ -18,6 +19,7 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class MovecraftListener implements Listener {
+    DirectorManager manager = SquadronDirectorMain.getInstance().getDirectorManager();
 
     @EventHandler
     public void onCraftSink(CraftSinkEvent event) {
@@ -31,6 +33,18 @@ public class MovecraftListener implements Listener {
             return;
         }
         directed.remove(craft);
+    }
+
+    @EventHandler
+    public void onRelease(final CraftReleaseEvent event) {
+        if (!manager.getDirectedCrafts().containsKey(event.getCraft().getNotificationPlayer())) {
+            return;
+        }
+        manager.getDirectedCrafts().get(event.getCraft().getNotificationPlayer()).remove(event.getCraft());
+        if (!manager.getDirectedCrafts().get(event.getCraft().getNotificationPlayer()).isEmpty()) {
+            return;
+        }
+        manager.getDirectedCrafts().remove(event.getCraft().getNotificationPlayer());
     }
 
     @EventHandler

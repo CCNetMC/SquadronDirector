@@ -40,29 +40,29 @@ public class SignChangeListener implements Listener {
         if(!e.getBlock().getType().name().equals("SIGN_POST") && !e.getBlock().getType().name().endsWith("SIGN") && !e.getBlock().getType().name().endsWith("WALL_SIGN")){
             return;
         }
-        if(ChatColor.stripColor(e.getLine(0)).equalsIgnoreCase("SquadronDirector") ){
+        if(ChatColor.stripColor(e.getLine(0)).equalsIgnoreCase("SquadronDirector") || ChatColor.stripColor(e.getLine(0)).equalsIgnoreCase("SDir") || ChatColor.stripColor(e.getLine(0)).equalsIgnoreCase("SD")){
             e.setLine(0,ChatColor.DARK_AQUA + "SquadronDirector");
-            if(ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[release]") ){
+            if(ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[release]") || ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[r]") ){
                 e.setLine(1,ChatColor.DARK_BLUE + "[Release]");
-            } else if (ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[launch]") ){
+            } else if (ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[launch]") || ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[la]")  ){
                 e.setLine(1,ChatColor.DARK_BLUE + "[Launch]");
-            } else if (ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[Cruise]") ){
+            } else if (ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[Cruise]")  || ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[c]") ){
                 e.setLine(1,ChatColor.DARK_BLUE + "[Cruise]");
-            } else if (ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[Rotate]") ){
+            } else if (ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[Rotate]") || ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[r]")  ){
                 e.setLine(1,ChatColor.DARK_BLUE + "[Rotate]");
-            } else if (ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[Lever]") ){
+            } else if (ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[Lever]") || ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[le]")  ){
                 e.setLine(1,ChatColor.DARK_BLUE + "[Lever]");
-            } else if (ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[Button]") ){
+            } else if (ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[Button]") || ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[b]")  ){
                 e.setLine(1,ChatColor.DARK_BLUE + "[Button]");
-            } else if (ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[Remote Sign]") ){
+            } else if (ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[Remote Sign]") || ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[rs]")  ){
                 e.setLine(1,ChatColor.DARK_BLUE + "[Remote Sign]");
-            } else if (ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[Recon]") ){
+            } else if (ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[Recon]") || ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[re]")  ){
                 e.setLine(1,ChatColor.DARK_BLUE + "[Recon]");
-            } else if (ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[Ascend]") ){
+            } else if (ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[Ascend]")  || ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[a]") ){
                 e.setLine(1,ChatColor.DARK_BLUE + "[Ascend]");
-            } else if (ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[Descend]") ){
+            } else if (ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[Descend]") || ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[d]")  ){
                 e.setLine(1,ChatColor.DARK_BLUE + "[Descend]");
-            } else if (ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[Form Up]") ){
+            } else if (ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[Form Up]") || ChatColor.stripColor(e.getLine(1)).equalsIgnoreCase("[fu]")  ){
                 e.setLine(1,ChatColor.DARK_BLUE + "[Form Up]");
                 String formName = "Echelon";
                 if (!e.getLine(2).isEmpty()) {
@@ -95,6 +95,11 @@ public class SignChangeListener implements Listener {
 
         if(player.getFlySpeed()<0.05) {     // check fly speed instead of playersinrecon in case someone got trapped in recon mode due to server restart or crash
             if((e.getAction()== Action.LEFT_CLICK_AIR)||(e.getAction()==Action.LEFT_CLICK_BLOCK)) {
+                if (manager.getPlayersInAimingMode().contains(player)) {
+                    player.sendMessage(SUCCESS_TAG + "Leaving Aiming mode.");
+                    manager.getPlayersInAimingMode().remove(player);
+                    return;
+                }
                 // they have to have been in recon mode for at least a second before removing it, or bad things could happen
                 if((player.getPotionEffect(PotionEffectType.INVISIBILITY)==null)||(player.getPotionEffect(PotionEffectType.INVISIBILITY).getDuration()<2479*20)){
                     player.sendMessage(SUCCESS_TAG + "Leaving Recon Mode.");
@@ -103,6 +108,11 @@ public class SignChangeListener implements Listener {
                     return;
                 }
             } else if (e.getAction()==Action.RIGHT_CLICK_AIR) {
+                if (!manager.getPlayersInAimingMode().contains(player)) {
+                    player.sendMessage(SUCCESS_TAG + "Entering Aiming mode.");
+                    manager.getPlayersInAimingMode().add(player);
+                    return;
+                }
                 manager.fireReconWeapons(player);
                 e.setCancelled(true);
                 return;
@@ -194,9 +204,9 @@ public class SignChangeListener implements Listener {
                     player.sendMessage(ERROR_TAG + "You do not have permissions to use that sign!");
                     return;
                 }
-                Integer spacing=10;
+                int spacing=10;
                 Formation form = Formation.valueOf(ChatColor.stripColor(sign.getLine(2)).toUpperCase());
-                spacing=Integer.valueOf(sign.getLine(3));
+                spacing= Integer.parseInt(sign.getLine(3));
 
                 if(spacing> SquadronDirectorMain.getInstance().getConfig().getInt("Max spacing")) {
                     player.sendMessage(ERROR_TAG + "Spacing is too high!");
